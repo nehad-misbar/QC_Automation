@@ -1,0 +1,137 @@
+package com.erp.tests;
+
+
+import com.erp.automation.base.BaseTest;
+import com.erp.automation.config.ConfigReader;
+import com.erp.automation.pages.LoginPage;
+import com.erp.automation.pages.PurchaseInvoiceReturnPage;
+import com.erp.automation.pages.PurchasingPage;
+import org.testng.annotations.Test;
+
+public class PurchaseInvoiceReturnTest extends BaseTest {
+
+    @Test(priority = 1)
+    public void userCanCreateNewPurchaseInvoiceReturn()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // for Foreign Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickPurchaseInvoiceReturn();
+
+        // Start creating a new foreign purchase invoice.
+        PurchaseInvoiceReturnPage purchaseInvoiceReturnPage=
+                new PurchaseInvoiceReturnPage(driver);
+
+        purchaseInvoiceReturnPage.clickNew();
+        purchaseInvoiceReturnPage.selectRandomOperationType();
+        purchaseInvoiceReturnPage.selectRandomVendor();
+        purchaseInvoiceReturnPage.selectRandomCurrency();
+
+        // Retry the dependent branch and warehouse selection when no warehouse is available.
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Warehouse selection attempt " + attempt +
+                            " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            purchaseInvoiceReturnPage.selectRandomBranch();
+
+            // The existing page method returns true when a warehouse is selected.
+            if (purchaseInvoiceReturnPage.selectRandomWarehouse()) {
+
+                warehouseSelected = true;
+                break;
+            }
+
+            System.out.println(
+                    "No warehouse available. Restarting selection from Vendor..."
+            );
+
+            // Restart the selection sequence from the Vendor field.
+            purchaseInvoiceReturnPage.selectRandomVendor();
+            // localPurchaseInvoicePage.selectRandomCurrency();
+        }
+
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a warehouse after " +
+                            maxAttempts + " attempts."
+            );
+        }
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                purchaseInvoiceReturnPage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        purchaseInvoiceReturnPage.selectRandomTaxCalculationMethod();
+        purchaseInvoiceReturnPage.selectRandomPriceNature();
+        purchaseInvoiceReturnPage.enterTodayPurchaseReturnInvoiceDateDirectly();
+        purchaseInvoiceReturnPage.selectTodayPurchaseReturnInvoiceDateFromCalendar();
+        purchaseInvoiceReturnPage.enterDueDateOneYearFromNowDirectly();
+        purchaseInvoiceReturnPage.selectDueDateOneYearFromNowFromCalendar();
+        purchaseInvoiceReturnPage.selectRandomPurchaseRepresentative();
+        purchaseInvoiceReturnPage.selectRandomBulkDiscountType();
+        purchaseInvoiceReturnPage.enterBulkDiscountAmount();
+        purchaseInvoiceReturnPage.selectRandomItemsCostsMethod();
+        purchaseInvoiceReturnPage.selectRandomTag();
+        purchaseInvoiceReturnPage.clickAddLine();
+        purchaseInvoiceReturnPage.selectRandomItem();
+        purchaseInvoiceReturnPage.enterQuantity("17");
+        purchaseInvoiceReturnPage.enterPrice("100");
+        purchaseInvoiceReturnPage.enterDiscountRate("20");
+        purchaseInvoiceReturnPage.enterDiscountValue("20");
+        purchaseInvoiceReturnPage.enterExtraRate("20");
+        purchaseInvoiceReturnPage.enterExtraValue("20");
+
+        purchaseInvoiceReturnPage.enterNote("بيان فاتورة مردود المشتريات");
+        purchaseInvoiceReturnPage.clickAddDiscountAdditionLine();
+        purchaseInvoiceReturnPage.captureNewDiscountAdditionRowIndex();
+        purchaseInvoiceReturnPage.selectRandomAccount();
+        purchaseInvoiceReturnPage.selectRandomInfluencingOnCost();
+        purchaseInvoiceReturnPage.enterDiscountRateInDiscountsSection("20");
+        purchaseInvoiceReturnPage.enterDiscountValueInDiscountsSection("20");
+        purchaseInvoiceReturnPage.enterAdditionRateInDiscountsSection("20");
+        purchaseInvoiceReturnPage.enterAdditionValueInDiscountsSection("20");
+        purchaseInvoiceReturnPage.selectRandomCurrencyInDiscountsSection();
+        purchaseInvoiceReturnPage.enterDiscountsAdditionsNote("بيان فاتورة مردود المشتريات");
+        purchaseInvoiceReturnPage.openPaymentsSchedulingTab();
+        purchaseInvoiceReturnPage.selectRandomPaymentTermsTemplate();
+        purchaseInvoiceReturnPage.enterInvoiceNotes("فاتورة مردود مشتريات تجريبية");
+        purchaseInvoiceReturnPage.enterUniqueRandomVendorInvoiceNumber();
+        purchaseInvoiceReturnPage.clickSavePurchaseReturnInvoice();
+        purchaseInvoiceReturnPage.confirmSavePurchaseReturnInvoice();
+
+    }
+
+}

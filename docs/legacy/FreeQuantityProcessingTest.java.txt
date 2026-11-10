@@ -1,0 +1,105 @@
+package com.erp.tests;
+
+import com.erp.automation.base.BaseTest;
+import com.erp.automation.config.ConfigReader;
+import com.erp.automation.pages.FreeQuantityProcessingPage;
+import com.erp.automation.pages.LoginPage;
+import com.erp.automation.pages.PurchasingPage;
+import org.testng.annotations.Test;
+
+
+public class FreeQuantityProcessingTest extends BaseTest {
+
+    @Test(priority = 1)
+    public void userCanCreateNewFreeQuantityProcessing()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // for Foreign Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickFreeQuantityProcessing();
+
+        // Start creating a new foreign purchase invoice.
+        FreeQuantityProcessingPage freeQuantityProcessingPage =
+                new FreeQuantityProcessingPage(driver);
+        freeQuantityProcessingPage.clickNew();
+        freeQuantityProcessingPage.enterOperationDateOneMonthFromNowDirectly();
+        freeQuantityProcessingPage.selectOperationDateSixMonthsFromNowFromCalendar();
+
+/**
+ * Selects a valid random branch and its available warehouse.
+ *
+ * Repeats the branch and warehouse selection sequence when the selected
+ * branch has no available warehouses, and fails the test if no valid
+ * combination is found within the configured number of attempts.
+ */
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+// Retry branch and warehouse selection until a valid combination is found.
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Branch and warehouse selection attempt "
+                            + attempt + " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            freeQuantityProcessingPage.selectRandomBranch();
+
+            // Select a random warehouse belonging to the selected branch.
+            if (freeQuantityProcessingPage.selectRandomWarehouse()) {
+
+                warehouseSelected = true;
+
+                System.out.println(
+                        "Branch and warehouse selected successfully."
+                );
+
+                break;
+            }
+
+            // Restart from the Branch field if no warehouse could be selected.
+            System.out.println(
+                    "No warehouse could be selected for this branch. "
+                            + "Retrying with another random branch..."
+            );
+        }
+
+// Fail the test if no valid branch and warehouse combination was found.
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a valid branch and warehouse combination "
+                            + "after " + maxAttempts + " attempts."
+            );
+        }
+        freeQuantityProcessingPage.enterNote("طلب معالجة كمية مجانية تجريبي");
+        freeQuantityProcessingPage.selectRandomProcessingType();
+        freeQuantityProcessingPage.clickAddLine();
+        freeQuantityProcessingPage.selectRandomItem();
+        freeQuantityProcessingPage.enterQuantityToBeProcessed("5000000");
+        freeQuantityProcessingPage.enterFreeQuantityProcessingNote("طلب معالجة كمية مجانية تجريبي");
+
+
+    }
+
+}

@@ -1,0 +1,140 @@
+package com.erp.tests;
+
+import com.erp.automation.base.BaseTest;
+import com.erp.automation.config.ConfigReader;
+import com.erp.automation.pages.ForeignPurchaseInvoicePage;
+import com.erp.automation.pages.LoginPage;
+import com.erp.automation.pages.PurchasingPage;
+import org.testng.annotations.Test;
+
+public class ForeignPurchaseInvoiceTest extends BaseTest {
+
+    @Test(priority = 1)
+    public void userCanCreateNewForeignPurchaseInvoice()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // for Foreign Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickForeignPurchaseInvoices();
+
+        // Start creating a new foreign purchase invoice.
+        ForeignPurchaseInvoicePage foreignPurchaseInvoicePage=
+                new ForeignPurchaseInvoicePage(driver);
+
+        foreignPurchaseInvoicePage.clickNew();
+        foreignPurchaseInvoicePage.selectRandomOperationType();
+        foreignPurchaseInvoicePage.selectRandomVendor();
+        foreignPurchaseInvoicePage.selectRandomCurrency();
+
+        // Retry the dependent branch and warehouse selection when no warehouse is available.
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Warehouse selection attempt " + attempt +
+                            " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            foreignPurchaseInvoicePage.selectRandomBranch();
+
+            // The existing page method returns true when a warehouse is selected.
+            if (foreignPurchaseInvoicePage.selectRandomWarehouse()) {
+
+                warehouseSelected = true;
+                break;
+            }
+
+            System.out.println(
+                    "No warehouse available. Restarting selection from Vendor..."
+            );
+
+            // Restart the selection sequence from the Vendor field.
+            foreignPurchaseInvoicePage.selectRandomVendor();
+            // localPurchaseInvoicePage.selectRandomCurrency();
+        }
+
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a warehouse after " +
+                            maxAttempts + " attempts."
+            );
+        }
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                foreignPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        foreignPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        foreignPurchaseInvoicePage.selectRandomPriceNature();
+        foreignPurchaseInvoicePage.enterTodayForeignInvoiceDateDirectly();
+        foreignPurchaseInvoicePage.selectTodayForeignInvoiceDateFromCalendar();
+        foreignPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        foreignPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+        foreignPurchaseInvoicePage.selectRandomPurchaseRepresentative();
+        foreignPurchaseInvoicePage.selectRandomBulkDiscountType();
+        foreignPurchaseInvoicePage.enterBulkDiscountAmount();
+        foreignPurchaseInvoicePage.selectRandomItemsCostsMethod();
+        foreignPurchaseInvoicePage.selectRandomTag();
+        foreignPurchaseInvoicePage.selectRandomLetterOfCredit();
+        foreignPurchaseInvoicePage.selectRandomClassification();
+        foreignPurchaseInvoicePage.clickAddLine();
+        foreignPurchaseInvoicePage.selectRandomItem();
+        foreignPurchaseInvoicePage.enterQuantity("17");
+        foreignPurchaseInvoicePage.enterPrice("100");
+        foreignPurchaseInvoicePage.enterDiscountRate("20");
+        foreignPurchaseInvoicePage.enterDiscountValue("20");
+        foreignPurchaseInvoicePage.enterExtraRate("20");
+        foreignPurchaseInvoicePage.enterExtraValue("20");
+        foreignPurchaseInvoicePage.selectTodayAsProductionDate();
+        foreignPurchaseInvoicePage.selectExpireDate();
+        foreignPurchaseInvoicePage.enterNote("بيان فاتورة المشتريات الخارجية");
+        foreignPurchaseInvoicePage.clickAddDiscountAdditionLine();
+        foreignPurchaseInvoicePage.captureNewDiscountAdditionRowIndex();
+        foreignPurchaseInvoicePage.selectRandomAccount();
+        foreignPurchaseInvoicePage.selectRandomInfluencingOnCost();
+        foreignPurchaseInvoicePage.enterDiscountRateInDiscountsSection("20");
+        foreignPurchaseInvoicePage.enterDiscountValueInDiscountsSection("20");
+        foreignPurchaseInvoicePage.enterAdditionRateInDiscountsSection("20");
+        foreignPurchaseInvoicePage.enterAdditionValueInDiscountsSection("20");
+        foreignPurchaseInvoicePage.selectRandomCurrencyInDiscountsSection();
+        foreignPurchaseInvoicePage.enterDiscountsAdditionsNote("بيان فاتورة المشتريات الخارجية");
+        foreignPurchaseInvoicePage.openPaymentsSchedulingTab();
+        foreignPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        foreignPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        foreignPurchaseInvoicePage.enterInvoiceNotes("فاتورة مشتريات خارجية تجريبية");
+        foreignPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        foreignPurchaseInvoicePage.clickSaveForeignPurchaseInvoice();
+        foreignPurchaseInvoicePage.confirmSaveForeignPurchaseInvoice();
+
+    }
+
+}

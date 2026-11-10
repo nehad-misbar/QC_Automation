@@ -1,0 +1,551 @@
+
+package com.erp.tests;
+
+import com.erp.automation.base.BaseTest;
+import com.erp.automation.pages.LoginPage;
+import com.erp.automation.pages.PurchasingPage;
+import com.erp.automation.config.ConfigReader;
+import com.erp.automation.pages.LocalPurchaseInvoicePage;
+import org.testng.annotations.Test;
+
+/**
+ * Test cases for the Local Purchase Invoices module.
+ */
+public class LocalPurchaseInvoiceTest extends BaseTest {
+
+    /**
+     * Logs in, navigates to Local Purchase Invoices,
+     * and clicks the New button to start a new invoice.
+     */
+    @Test(priority = 1)
+    public void userCanCreateNewLocalPurchaseInvoiceWithoutReferenceDocument()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // TODO: Replace this call with the actual navigation method
+        // for Local Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickLocalPurchaseInvoices();
+
+        // Start creating a new local purchase invoice.
+        LocalPurchaseInvoicePage localPurchaseInvoicePage =
+                new LocalPurchaseInvoicePage(driver);
+
+        localPurchaseInvoicePage.clickNew();
+        localPurchaseInvoicePage.selectRandomOperationType();
+        // Select a random vendor, currency, and branch before selecting a warehouse.
+        localPurchaseInvoicePage.selectRandomVendor();
+        localPurchaseInvoicePage.selectRandomCurrency();
+
+// Retry the dependent branch and warehouse selection when no warehouse is available.
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Warehouse selection attempt " + attempt +
+                            " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            localPurchaseInvoicePage.selectRandomBranch();
+
+            // The existing page method returns true when a warehouse is selected.
+            if (localPurchaseInvoicePage.selectRandomWarehouse()) {
+
+                warehouseSelected = true;
+                break;
+            }
+
+            System.out.println(
+                    "No warehouse available. Restarting selection from Vendor..."
+            );
+
+            // Restart the selection sequence from the Vendor field.
+            localPurchaseInvoicePage.selectRandomVendor();
+           // localPurchaseInvoicePage.selectRandomCurrency();
+        }
+
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a warehouse after " +
+                            maxAttempts + " attempts."
+            );
+        }
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                localPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        localPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        localPurchaseInvoicePage.selectRandomPriceNature();
+        localPurchaseInvoicePage.enterTodayInvoiceDateDirectly();
+        localPurchaseInvoicePage.selectTodayInvoiceDateFromCalendar();
+        localPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        localPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+        localPurchaseInvoicePage.selectRandomPurchaseRepresentative();
+        localPurchaseInvoicePage.selectRandomBulkDiscountType();
+        localPurchaseInvoicePage.enterBulkDiscountAmount();
+        localPurchaseInvoicePage.selectRandomItemsCostsMethod();
+        localPurchaseInvoicePage.selectRandomTag();
+        localPurchaseInvoicePage.clickAddLine();
+        localPurchaseInvoicePage.selectRandomItem();
+        localPurchaseInvoicePage.enterQuantity("17");
+        localPurchaseInvoicePage.enterPrice("100");
+        localPurchaseInvoicePage.enterDiscountRate("20");
+        localPurchaseInvoicePage.enterDiscountValue("20");
+        localPurchaseInvoicePage.enterExtraRate("20");
+        localPurchaseInvoicePage.enterExtraValue("20");
+        localPurchaseInvoicePage.selectTodayAsProductionDate();
+        localPurchaseInvoicePage.selectExpireDate();
+        localPurchaseInvoicePage.enterFreeQuantity(114);
+        localPurchaseInvoicePage.enterNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.clickAddDiscountAdditionLine();
+        localPurchaseInvoicePage.captureNewDiscountAdditionRowIndex();
+        localPurchaseInvoicePage.selectRandomAccount();
+        localPurchaseInvoicePage.selectRandomInfluencingOnCost();
+        localPurchaseInvoicePage.enterDiscountRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterDiscountValueInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionValueInDiscountsSection("20");
+        localPurchaseInvoicePage.selectRandomCurrencyInDiscountsSection();
+        localPurchaseInvoicePage.enterDiscountsAdditionsNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.openPaymentsSchedulingTab();
+        localPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        localPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        localPurchaseInvoicePage.enterLocalInvoiceNotes("فاتورة مشتريات محلية تجريبية");
+        localPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        localPurchaseInvoicePage.clickSaveLocalPurchaseInvoice();
+        localPurchaseInvoicePage.confirmSaveLocalPurchaseInvoice();
+
+    }
+
+    @Test(priority = 2)
+    public void userCanDuplicateLocalPurchaseInvoiceWithoutReferenceDocument()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // TODO: Replace this call with the actual navigation method
+        // for Local Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickLocalPurchaseInvoices();
+
+        // Start creating a new local purchase invoice.
+        LocalPurchaseInvoicePage localPurchaseInvoicePage =
+                new LocalPurchaseInvoicePage(driver);
+
+        localPurchaseInvoicePage.selectRandomLocalPurchaseInvoiceAndGetStatus();
+        localPurchaseInvoicePage.clickCopy();
+
+        localPurchaseInvoicePage.selectRandomOperationType();
+        // Select a random vendor, currency, and branch before selecting a warehouse.
+        localPurchaseInvoicePage.selectRandomVendor();
+        localPurchaseInvoicePage.clickContinue();
+        localPurchaseInvoicePage.selectRandomCurrency();
+
+// Retry the dependent branch and warehouse selection when no warehouse is available.
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Warehouse selection attempt " + attempt +
+                            " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            localPurchaseInvoicePage.selectRandomBranch();
+            localPurchaseInvoicePage.clickContinue();
+
+            // The existing page method returns true when a warehouse is selected.
+            if (localPurchaseInvoicePage.selectRandomWarehouse()) {
+
+                localPurchaseInvoicePage.clickContinue();
+                warehouseSelected = true;
+                break;
+            }
+
+            System.out.println(
+                    "No warehouse available. Restarting selection from Vendor..."
+            );
+
+            // Restart the selection sequence from the Vendor field.
+            localPurchaseInvoicePage.selectRandomVendor();
+            // localPurchaseInvoicePage.selectRandomCurrency();
+            localPurchaseInvoicePage.clickContinue();
+        }
+
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a warehouse after " +
+                            maxAttempts + " attempts."
+            );
+        }
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                localPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        localPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        localPurchaseInvoicePage.selectRandomPriceNature();
+        localPurchaseInvoicePage.enterTodayInvoiceDateDirectly();
+        localPurchaseInvoicePage.selectTodayInvoiceDateFromCalendar();
+        localPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        localPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+        localPurchaseInvoicePage.selectRandomPurchaseRepresentative();
+        localPurchaseInvoicePage.selectRandomBulkDiscountType();
+        localPurchaseInvoicePage.enterBulkDiscountAmount();
+        localPurchaseInvoicePage.selectRandomItemsCostsMethod();
+        localPurchaseInvoicePage.selectRandomTag();
+        localPurchaseInvoicePage.clickAddLine();
+        localPurchaseInvoicePage.selectRandomItem();
+        localPurchaseInvoicePage.enterQuantity("17");
+        localPurchaseInvoicePage.enterPrice("100");
+        localPurchaseInvoicePage.enterDiscountRate("20");
+        localPurchaseInvoicePage.enterDiscountValue("20");
+        localPurchaseInvoicePage.enterExtraRate("20");
+        localPurchaseInvoicePage.enterExtraValue("20");
+        localPurchaseInvoicePage.selectTodayAsProductionDate();
+        localPurchaseInvoicePage.selectExpireDate();
+        localPurchaseInvoicePage.enterFreeQuantity(114);
+        localPurchaseInvoicePage.enterNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.clickAddDiscountAdditionLine();
+        localPurchaseInvoicePage.captureNewDiscountAdditionRowIndex();
+        localPurchaseInvoicePage.selectRandomAccount();
+        localPurchaseInvoicePage.selectRandomInfluencingOnCost();
+        localPurchaseInvoicePage.enterDiscountRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterDiscountValueInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionValueInDiscountsSection("20");
+        localPurchaseInvoicePage.selectRandomCurrencyInDiscountsSection();
+        localPurchaseInvoicePage.enterDiscountsAdditionsNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.openPaymentsSchedulingTab();
+        localPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        localPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        localPurchaseInvoicePage.enterLocalInvoiceNotes("فاتورة مشتريات محلية تجريبية");
+        localPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        localPurchaseInvoicePage.clickSaveLocalPurchaseInvoice();
+        localPurchaseInvoicePage.confirmSaveLocalPurchaseInvoice();
+    }
+
+    @Test(priority = 3)
+    public void userCanAddLocalPurchaseInvoiceWithoutReferenceDocument()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // TODO: Replace this call with the actual navigation method
+        // for Local Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickLocalPurchaseInvoices();
+
+        // Start creating a new local purchase invoice.
+        LocalPurchaseInvoicePage localPurchaseInvoicePage =
+                new LocalPurchaseInvoicePage(driver);
+
+        localPurchaseInvoicePage.selectRandomLocalPurchaseInvoiceAndGetStatus();
+        localPurchaseInvoicePage.clickAddLocalPurchaseInvoice();
+
+        localPurchaseInvoicePage.selectRandomOperationType();
+        // Select a random vendor, currency, and branch before selecting a warehouse.
+        localPurchaseInvoicePage.selectRandomVendor();
+        localPurchaseInvoicePage.selectRandomCurrency();
+
+// Retry the dependent branch and warehouse selection when no warehouse is available.
+        int maxAttempts = 10;
+        boolean warehouseSelected = false;
+
+        for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+
+            System.out.println(
+                    "Warehouse selection attempt " + attempt +
+                            " of " + maxAttempts
+            );
+
+            // Select a random branch before checking its available warehouses.
+            localPurchaseInvoicePage.selectRandomBranch();
+
+            // The existing page method returns true when a warehouse is selected.
+            if (localPurchaseInvoicePage.selectRandomWarehouse()) {
+
+                warehouseSelected = true;
+                break;
+            }
+
+            System.out.println(
+                    "No warehouse available. Restarting selection from Vendor..."
+            );
+
+            // Restart the selection sequence from the Vendor field.
+            localPurchaseInvoicePage.selectRandomVendor();
+            // localPurchaseInvoicePage.selectRandomCurrency();
+        }
+
+        if (!warehouseSelected) {
+            throw new IllegalStateException(
+                    "Could not select a warehouse after " +
+                            maxAttempts + " attempts."
+            );
+        }
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                localPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        localPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        localPurchaseInvoicePage.selectRandomPriceNature();
+        localPurchaseInvoicePage.enterTodayInvoiceDateDirectly();
+        localPurchaseInvoicePage.selectTodayInvoiceDateFromCalendar();
+        localPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        localPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+        localPurchaseInvoicePage.selectRandomPurchaseRepresentative();
+        localPurchaseInvoicePage.selectRandomBulkDiscountType();
+        localPurchaseInvoicePage.enterBulkDiscountAmount();
+        localPurchaseInvoicePage.selectRandomItemsCostsMethod();
+        localPurchaseInvoicePage.selectRandomTag();
+        localPurchaseInvoicePage.clickAddLine();
+        localPurchaseInvoicePage.selectRandomItem();
+        localPurchaseInvoicePage.enterQuantity("17");
+        localPurchaseInvoicePage.enterPrice("100");
+        localPurchaseInvoicePage.enterDiscountRate("20");
+        localPurchaseInvoicePage.enterDiscountValue("20");
+        localPurchaseInvoicePage.enterExtraRate("20");
+        localPurchaseInvoicePage.enterExtraValue("20");
+        localPurchaseInvoicePage.selectTodayAsProductionDate();
+        localPurchaseInvoicePage.selectExpireDate();
+        localPurchaseInvoicePage.enterFreeQuantity(114);
+        localPurchaseInvoicePage.enterNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.clickAddDiscountAdditionLine();
+        localPurchaseInvoicePage.captureNewDiscountAdditionRowIndex();
+        localPurchaseInvoicePage.selectRandomAccount();
+        localPurchaseInvoicePage.selectRandomInfluencingOnCost();
+        localPurchaseInvoicePage.enterDiscountRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterDiscountValueInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionRateInDiscountsSection("20");
+        localPurchaseInvoicePage.enterAdditionValueInDiscountsSection("20");
+        localPurchaseInvoicePage.selectRandomCurrencyInDiscountsSection();
+        localPurchaseInvoicePage.enterDiscountsAdditionsNote("بيان فاتورة المشتريات المحلية");
+        localPurchaseInvoicePage.openPaymentsSchedulingTab();
+        localPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        localPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        localPurchaseInvoicePage.enterLocalInvoiceNotes("فاتورة مشتريات محلية تجريبية");
+        localPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        localPurchaseInvoicePage.clickSaveLocalPurchaseInvoice();
+        localPurchaseInvoicePage.confirmSaveLocalPurchaseInvoice();
+    }
+
+    @Test(priority = 4)
+    public void userCanCreateNewLocalPurchaseInvoiceWithReferenceDocument()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // TODO: Replace this call with the actual navigation method
+        // for Local Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickLocalPurchaseInvoices();
+
+        // Start creating a new local purchase invoice.
+        LocalPurchaseInvoicePage localPurchaseInvoicePage =
+                new LocalPurchaseInvoicePage(driver);
+
+        localPurchaseInvoicePage.clickNew();
+        localPurchaseInvoicePage.clickOpenReferenceDocumentGridButton();
+        localPurchaseInvoicePage.selectRandomReceivingOrderFromGrid();
+        localPurchaseInvoicePage.downloadReferenceDocument();
+        localPurchaseInvoicePage.selectRandomOperationType();
+
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                localPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        localPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        localPurchaseInvoicePage.enterTodayInvoiceDateDirectly();
+        localPurchaseInvoicePage.selectTodayInvoiceDateFromCalendar();
+        localPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        localPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+        localPurchaseInvoicePage.selectRandomBulkDiscountType();
+        localPurchaseInvoicePage.enterBulkDiscountAmount();
+        localPurchaseInvoicePage.selectRandomTag();
+        localPurchaseInvoicePage.openPaymentsSchedulingTab();
+        localPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        localPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        localPurchaseInvoicePage.enterLocalInvoiceNotes("فاتورة مشتريات محلية تجريبية");
+        localPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        localPurchaseInvoicePage.clickSaveLocalPurchaseInvoice();
+        localPurchaseInvoicePage.confirmSaveLocalPurchaseInvoice();
+    }
+
+    @Test(priority = 5)
+    public void userCanDuplicateLocalPurchaseInvoiceWithReferenceDocument()
+            throws InterruptedException {
+
+        // Open the ERP login page.
+        LoginPage loginPage =
+                new LoginPage(driver);
+
+        loginPage.open(
+                "https://qc.studioerp.com/login"
+        );
+
+        // Log in using the credentials from configuration.
+        loginPage.login(
+                ConfigReader.get("username"),
+                ConfigReader.get("password")
+        );
+
+        // Navigate through Purchasing → Operations → Local Purchase Invoices.
+        PurchasingPage purchasingPage =
+                new PurchasingPage(driver);
+
+        purchasingPage.clickPurchasing();
+        purchasingPage.clickOperations();
+
+        // TODO: Replace this call with the actual navigation method
+        // for Local Purchase Invoices after confirming its name in PurchasingPage.
+        purchasingPage.clickLocalPurchaseInvoices();
+
+        // Start creating a new local purchase invoice.
+        LocalPurchaseInvoicePage localPurchaseInvoicePage =
+                new LocalPurchaseInvoicePage(driver);
+
+        localPurchaseInvoicePage.selectRandomLocalPurchaseInvoiceAndGetStatus();
+        localPurchaseInvoicePage.clickCopy();
+
+        localPurchaseInvoicePage.clickOpenReferenceDocumentGridButton();
+        localPurchaseInvoicePage.selectRandomReceivingOrderFromGrid();
+        localPurchaseInvoicePage.downloadReferenceDocument();
+
+        Thread.sleep(3000);
+        localPurchaseInvoicePage.selectRandomOperationType();
+        // Randomly select a Cost Center only if the field is enabled.
+        boolean costCenterSelected =
+                localPurchaseInvoicePage.selectRandomCostCenter();
+
+        if (!costCenterSelected) {
+            System.out.println(
+                    "Cost Center selection was skipped or no selection was possible."
+            );
+        }
+
+        localPurchaseInvoicePage.selectRandomTaxCalculationMethod();
+        localPurchaseInvoicePage.selectCreditPaymentMethod();
+        localPurchaseInvoicePage.enterTodayInvoiceDateDirectly();
+        localPurchaseInvoicePage.selectTodayInvoiceDateFromCalendar();
+        localPurchaseInvoicePage.enterDueDateOneYearFromNowDirectly();
+        localPurchaseInvoicePage.selectDueDateOneYearFromNowFromCalendar();
+
+        localPurchaseInvoicePage.selectRandomBulkDiscountType();
+        localPurchaseInvoicePage.enterBulkDiscountAmount();
+        localPurchaseInvoicePage.selectRandomTag();
+        localPurchaseInvoicePage.openPaymentsSchedulingTab();
+        localPurchaseInvoicePage.selectRandomPaymentTermsTemplate();
+        localPurchaseInvoicePage.copyDisplayedAmountToInvoiceAmount();
+        localPurchaseInvoicePage.enterLocalInvoiceNotes("فاتورة مشتريات محلية تجريبية");
+        localPurchaseInvoicePage.enterUniqueRandomVendorInvoiceNumber();
+        localPurchaseInvoicePage.clickSaveLocalPurchaseInvoice();
+        localPurchaseInvoicePage.confirmSaveLocalPurchaseInvoice();
+    }
+
+
+}

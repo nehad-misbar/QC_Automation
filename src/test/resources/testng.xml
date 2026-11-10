@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+
+<!-- configfailurepolicy="continue": one failed login (@BeforeMethod) must not
+     skip all the following tests (2026-10-31: 1 failure → 32 skipped). -->
+<suite name="ERP Automation Suite" verbose="2" configfailurepolicy="continue">
+
+    <!-- Writes every result to test-output/reports/ExtentReport.html, grouped by page
+         (one parent entry per test class, see TestListener.PAGE_NAMES).
+         Also declared with @Listeners on BaseTest; TestNG registers it once. -->
+    <listeners>
+        <listener class-name="com.erp.automation.listeners.TestListener"/>
+    </listeners>
+
+    <!-- One <test> per page, in the order of the "المشتريات" menu. The tests use
+         priority=..., and inside ONE <test> TestNG orders the methods of ALL classes by
+         priority (priority 1 of every page, then 2 ...), mixing the pages. Separate
+         <test> blocks run one after the other, so each page runs as a whole.
+         To leave a page out, comment its <test> block. -->
+
+    <test name="طلبات الشراء">
+        <classes>
+            <class name="com.erp.tests.PurchaseRequisitionTest"/>
+        </classes>
+    </test>
+
+    <test name="عروض الاسعار">
+        <classes>
+            <class name="com.erp.tests.QuotationTest"/>
+        </classes>
+    </test>
+
+    <test name="اوامر الشراء">
+        <classes>
+            <class name="com.erp.tests.PurchaseOrderTest"/>
+        </classes>
+    </test>
+
+    <test name="فواتير المشتريات المحلية">
+        <classes>
+            <class name="com.erp.tests.LocalPurchaseInvoiceTest"/>
+        </classes>
+    </test>
+
+    <test name="فواتير المشتريات الخارجية">
+        <classes>
+            <class name="com.erp.tests.ForeignPurchaseInvoiceTest"/>
+        </classes>
+    </test>
+
+    <test name="فواتير مردود المشتريات">
+        <classes>
+            <class name="com.erp.tests.PurchaseInvoiceReturnTest"/>
+        </classes>
+    </test>
+
+    <test name="معالجة الكمية المجانية">
+        <classes>
+            <class name="com.erp.tests.FreeQuantityProcessingTest"/>
+        </classes>
+    </test>
+</suite>
