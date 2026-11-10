@@ -1,4 +1,3 @@
-inajib
 package com.erp.tests;
 
 import com.erp.automation.base.PurchasingBaseTest;
