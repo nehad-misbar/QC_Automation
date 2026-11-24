@@ -20,43 +20,83 @@
 
     <test name="طلبات الشراء">
         <classes>
-            <class name="com.erp.tests.PurchaseRequisitionTest"/>
+            <class name="com.erp.tests.purchasing.PurchaseRequisitionTest"/>
         </classes>
     </test>
 
     <test name="عروض الاسعار">
         <classes>
-            <class name="com.erp.tests.QuotationTest"/>
+            <class name="com.erp.tests.purchasing.QuotationTest"/>
         </classes>
     </test>
 
     <test name="اوامر الشراء">
         <classes>
-            <class name="com.erp.tests.PurchaseOrderTest"/>
+            <class name="com.erp.tests.purchasing.PurchaseOrderTest"/>
         </classes>
     </test>
 
     <test name="فواتير المشتريات المحلية">
         <classes>
-            <class name="com.erp.tests.LocalPurchaseInvoiceTest"/>
+            <class name="com.erp.tests.purchasing.LocalPurchaseInvoiceTest"/>
         </classes>
     </test>
 
     <test name="فواتير المشتريات الخارجية">
         <classes>
-            <class name="com.erp.tests.ForeignPurchaseInvoiceTest"/>
+            <class name="com.erp.tests.purchasing.ForeignPurchaseInvoiceTest"/>
         </classes>
     </test>
 
     <test name="فواتير مردود المشتريات">
         <classes>
-            <class name="com.erp.tests.PurchaseInvoiceReturnTest"/>
+            <class name="com.erp.tests.purchasing.PurchaseInvoiceReturnTest"/>
         </classes>
     </test>
 
     <test name="معالجة الكمية المجانية">
         <classes>
-            <class name="com.erp.tests.FreeQuantityProcessingTest"/>
+            <class name="com.erp.tests.purchasing.FreeQuantityProcessingTest"/>
+        </classes>
+    </test>
+
+    <!-- ===== المبيعات (Sales) =====
+         Test classes live in com.erp.tests.sales, pages in com.erp.automation.pages.sales.
+         One <test> per page, in the order of the "المبيعات → العمليات" menu. -->
+
+    <test name="عروض أسعار المبيعات">
+        <classes>
+            <class name="com.erp.tests.sales.SalesQuotationTest"/>
+        </classes>
+    </test>
+
+    <test name="أوامر البيع">
+        <classes>
+            <class name="com.erp.tests.sales.SalesOrderTest"/>
+        </classes>
+    </test>
+
+    <test name="فواتير المبيعات">
+        <classes>
+            <class name="com.erp.tests.sales.SalesInvoiceTest"/>
+        </classes>
+    </test>
+
+    <test name="مردود المبيعات">
+        <classes>
+            <class name="com.erp.tests.sales.SalesReturnTest"/>
+        </classes>
+    </test>
+
+    <test name="التسعير">
+        <classes>
+            <class name="com.erp.tests.sales.PricingTest"/>
+        </classes>
+    </test>
+
+    <test name="طلبات تعديل الأسعار">
+        <classes>
+            <class name="com.erp.tests.sales.PriceChangeRequestTest"/>
         </classes>
     </test>
 </suite>

@@ -5,7 +5,7 @@ import com.erp.automation.core.DriverFactory;
 import com.erp.automation.core.DriverManager;
 import com.erp.automation.data.DocumentStatus;
 import com.erp.automation.pages.LoginPage;
-import com.erp.automation.pages.PurchasingPage;
+import com.erp.automation.pages.purchasing.PurchasingPage;
 import com.erp.automation.utils.WaitManager;
 import com.erp.automation.pages.components.DocumentForm;
 import com.erp.automation.ui.ApiRecorder;

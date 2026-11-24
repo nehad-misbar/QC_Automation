@@ -78,10 +78,21 @@ public class UiWaits {
         List<WebElement> noThanks = driver.findElements(By.xpath(
                 "//button[contains(normalize-space(),'لا شكر')]"));
         for (WebElement button : noThanks) {
-            if (button.isDisplayed()) {
-                button.click();
+            try {
+                if (!button.isDisplayed()) {
+                    continue;
+                }
+                try {
+                    button.click();
+                } catch (ElementClickInterceptedException covered) {
+                    // QC run 2026-11-18 18:56: an open dialog ("البحث عن صنف") covered "لا شكراً"
+                    // too, and this click threw out of clickWhenReady. Clicked by script instead.
+                    ((JavascriptExecutor) driver).executeScript("arguments[0].click();", button);
+                }
                 System.out.println("Closed the 'تثبيت Primex ERP' pop-up (لا شكراً).");
                 return true;
+            } catch (StaleElementReferenceException gone) {
+                // the pop-up closed by itself
             }
         }
         return false;

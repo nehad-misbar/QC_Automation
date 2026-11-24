@@ -83,6 +83,42 @@ public class DocumentApi {
         return new ArrayList<>((List<Map<String, Object>>) result);
     }
 
+    /**
+     * GET {@code url} (an absolute API url, e.g. one found by {@link #apiUrlsUsedByPage}) with the
+     * page's bearer token; returns the parsed JSON (maps / lists), or throws when it fails.
+     */
+    public Object getJson(String url) {
+        Object result = ((JavascriptExecutor) driver).executeAsyncScript(
+                "const [url, done] = arguments;"
+                        + "const cookie = document.cookie.split(';').map(c => c.trim())"
+                        + "  .find(c => c.startsWith('authToken='));"
+                        + "if (!cookie) { done('ERROR: no authToken cookie (not logged in?)'); return; }"
+                        + "const token = decodeURIComponent(cookie.substring('authToken='.length));"
+                        + "fetch(url, {headers: {'Authorization': 'Bearer ' + token}})"
+                        + ".then(r => r.ok ? r.json() : Promise.reject('HTTP ' + r.status))"
+                        + ".then(j => done({json: j}))"
+                        + ".catch(e => done('ERROR: ' + e));",
+                url);
+        if (result instanceof String error) {
+            throw new IllegalStateException("GET " + url + " failed: " + error);
+        }
+        return ((Map<?, ?>) result).get("json");
+    }
+
+    /**
+     * API urls the page has loaded so far (GET calls seen in the browser's resource timings)
+     * that contain {@code part}, oldest first. Used to learn the url the app reads a document
+     * with (its id in the path), without hard-coding it.
+     */
+    @SuppressWarnings("unchecked")
+    public List<String> apiUrlsUsedByPage(String part) {
+        Object urls = ((JavascriptExecutor) driver).executeScript(
+                "return performance.getEntriesByType('resource').map(e => e.name)"
+                        + "  .filter(n => /\\/api\\//.test(n) && n.includes(arguments[0]));",
+                part);
+        return urls == null ? List.of() : new ArrayList<>((List<String>) urls);
+    }
+
     /** {@code <resource>/filter}, or {@code resource} itself when it already names the filter path. */
     private String filterPath() {
         return resource.contains("/filter") ? resource : resource + "/filter";

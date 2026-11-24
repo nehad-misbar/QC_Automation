@@ -14,6 +14,7 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,9 +47,19 @@ public class DocumentList {
     private final By kanbanCardCode = By.xpath(
             "//button//span[(contains(@class,'text-xs')"
                     + " and (starts-with(normalize-space(),'PO') or starts-with(normalize-space(),'PR')"
-                    + " or starts-with(normalize-space(),'PQ')))"
+                    + " or starts-with(normalize-space(),'PQ')"
+                    // Sales (QC 2026-11-12: quotation cards show "SQ2608-000016" in span.text-xs)
+                    + " or starts-with(normalize-space(),'SQ') or starts-with(normalize-space(),'SO')"
+                    + " or starts-with(normalize-space(),'SI') or starts-with(normalize-space(),'SR')))"
                     // FQP cards hold the number in span.font-semibold (QC 2026-11-05)
                     + " or (contains(@class,'font-semibold') and starts-with(normalize-space(),'FQP'))]");
+    /**
+     * A Kanban card whatever it shows: the card button (rounded bordered column)
+     * holding a status badge (span.rounded-full).
+     */
+    private final By kanbanCard = By.xpath(
+            "//button[contains(@class,'flex-col') and contains(@class,'rounded-lg')]"
+                    + "[.//span[contains(@class,'rounded-full')]]");
     // PO = orders, PR = requisitions (QC 2026-11-01: requisition cards show "PR2608-000001"),
     // PQ = price quotations, FQP = free quantity processing (QC 2026-11-05: the card shows "FQP2608-000003").
     private final By groupRow = By.cssSelector(".ag-center-cols-container div[role='row'].ag-row-group");
@@ -60,13 +71,19 @@ public class DocumentList {
         this.driver = driver;
     }
 
+    /**
+     * Opens the Kanban view and waits for its cards. It waits for the cards
+     * themselves, not for a document number on them: on "فواتير المبيعات" the
+     * cards show no number (QC 2026-11-16), and the old wait then ended in a
+     * bare timeout instead of a clear assertion in the test.
+     */
     public void switchToKanbanView() {
 
         new WebDriverWait(driver, Duration.ofSeconds(10))
                 .until(ExpectedConditions.elementToBeClickable(kanbanViewButton)).click();
         new WebDriverWait(driver, Duration.ofSeconds(15))
                 .until(d -> d.findElements(By.cssSelector(".ag-root")).isEmpty()
-                        && !d.findElements(kanbanCardCode).isEmpty());
+                        && (!d.findElements(kanbanCardCode).isEmpty() || !d.findElements(kanbanCard).isEmpty()));
     }
 
     public void switchToListView() {
@@ -225,6 +242,199 @@ public class DocumentList {
         Map<String, Integer> groups = new LinkedHashMap<>();
         raw.forEach((label, count) -> groups.put(label, ((Number) count).intValue()));
         return groups;
+    }
+
+    /**
+     * One group of a grouped list: its label (the "المجموعة" column, e.g. "معتمد"),
+     * the text its own row shows in the status column, and the statuses of its
+     * documents shown once the group is expanded.
+     */
+    public record GroupStatus(String label, String rowStatus, List<String> childStatuses) { }
+
+    /**
+     * Opens the groups of the grouped list one at a time (as a user does) and
+     * reads, for each group, the status its own row shows in column
+     * {@code statusColumn} and the statuses of its documents; each group is
+     * closed again before the next one is opened.
+     *
+     * <p>QC 2026-11-16 ("فواتير المبيعات" grouped by "حالة الفاتورة"): the group
+     * is "معتمد (222)" and every invoice in it is معتمد, but the group row shows
+     * "ملغي" in the "حالة الفاتورة" column.</p>
+     *
+     * <p>The grid renders only the columns in view, so it is scrolled sideways
+     * until the group column, then the status column, is rendered.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public List<GroupStatus> getGroupStatuses(String statusColumn) {
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        new WebDriverWait(driver, Duration.ofSeconds(10))
+                .until(ExpectedConditions.presenceOfElementLocated(groupRow));
+
+        // 1. Group labels by row-id (needs the group column in view).
+        scrollGridUntil("[...document.querySelectorAll('div[role=row].ag-row-group .ag-group-value')]"
+                + ".some(v => v.textContent.trim())");
+        Map<String, Object> labels = (Map<String, Object>) js.executeScript(
+                "const out={};"
+                        + "document.querySelectorAll('div[role=row].ag-row-group[row-id]').forEach(r=>{"
+                        + "  const v=r.querySelector('.ag-group-value');"
+                        + "  if(v && v.textContent.trim()) out[r.getAttribute('row-id')]=v.textContent.trim();});"
+                        + "return out;");
+
+        // 2. One group at a time. QC 2026-11-23 ("طلبات تعديل الأسعار", checked by hand): opening a
+        //    group closes the group that is open, and that click does not open the clicked group.
+        //    Expanding every group at once therefore left all of them closed, and the test reported
+        //    "shows no documents when expanded" for groups that do show their documents.
+        String statusVisible = "!!document.querySelector(\".ag-center-cols-container div[role=row] [col-id='"
+                + statusColumn + "']\")";
+        List<GroupStatus> groups = new ArrayList<>();
+        for (Map.Entry<String, Object> group : labels.entrySet()) {
+            String id = group.getKey();
+            setGroupExpanded(id, true);
+            scrollGridUntil(statusVisible);
+            // Read until the group shows exactly its own count of documents, twice in a row (max 5 s).
+            // QC 2026-11-23: read 5 ms after opening "معتمد (14)", the rows of the "مسودة" group just
+            // closed were still in the grid, and the group seemed to hold 20 documents, 6 of them مسودة.
+            int expected = groupChildCount(id);
+            String rowStatus = "";
+            List<String> children = new ArrayList<>();
+            List<String> previous = null;
+            long end = System.currentTimeMillis() + 5_000;
+            while (true) {
+                List<Map<String, Object>> rows = (List<Map<String, Object>>) js.executeScript(
+                        "const col=arguments[0];"
+                                + "return [...document.querySelectorAll('.ag-center-cols-container div[role=row][row-index]')]"
+                                + "  .sort((a,b)=>Number(a.getAttribute('row-index'))-Number(b.getAttribute('row-index')))"
+                                + "  .map(r=>{const c=r.querySelector(\"[col-id='\"+col+\"']\");"
+                                + "    return {id:r.getAttribute('row-id')||'', group:r.classList.contains('ag-row-group'),"
+                                + "            status:c ? c.textContent.trim() : ''};});",
+                        statusColumn);
+                children = new ArrayList<>();
+                boolean inGroup = false;
+                for (Map<String, Object> row : rows) {
+                    if (Boolean.TRUE.equals(row.get("group"))) {
+                        if (inGroup) {
+                            break;
+                        }
+                        if (id.equals(String.valueOf(row.get("id")))) {
+                            inGroup = true;
+                            rowStatus = String.valueOf(row.get("status"));
+                        }
+                    } else if (inGroup) {
+                        children.add(String.valueOf(row.get("status")));
+                    }
+                }
+                boolean settled = children.equals(previous) && (expected < 0 || children.size() == expected);
+                if (settled || System.currentTimeMillis() > end) {
+                    break;
+                }
+                previous = children;
+                pause(250);
+            }
+            groups.add(new GroupStatus(String.valueOf(group.getValue()), rowStatus, children));
+            setGroupExpanded(id, false);
+            waitForGroupDocumentsToLeave();
+        }
+        return groups;
+    }
+
+    /** The "(14)" count of group row {@code rowId}, or -1 when it is not shown. */
+    private int groupChildCount(String rowId) {
+        Object count = ((JavascriptExecutor) driver).executeScript(
+                "const c=[...document.querySelectorAll(\"div[role=row][row-id='\" + arguments[0] + \"'] .ag-group-child-count\")]"
+                        + ".map(e=>e.textContent.replace(/[^0-9]/g,'')).find(t=>t);"
+                        + "return c ? Number(c) : -1;", rowId);
+        return count instanceof Number n ? n.intValue() : -1;
+    }
+
+    /** After a group is closed: waits (max 5 s) until no document row of it is left in the grid. */
+    private void waitForGroupDocumentsToLeave() {
+        try {
+            new WebDriverWait(driver, Duration.ofSeconds(5)).pollingEvery(Duration.ofMillis(200))
+                    .until(d -> Boolean.TRUE.equals(((JavascriptExecutor) d).executeScript(
+                            "return [...document.querySelectorAll('.ag-center-cols-container div[role=row][row-index]')]"
+                                    + ".every(r => r.classList.contains('ag-row-group'));")));
+        } catch (TimeoutException stillThere) {
+            System.out.println("Documents of a closed group are still shown after 5 s.");
+        }
+    }
+
+    /** Whether group row {@code rowId} is expanded. */
+    private boolean isGroupExpanded(String rowId) {
+        return Boolean.TRUE.equals(((JavascriptExecutor) driver).executeScript(
+                "return !!document.querySelector(\"div[role=row][row-id='\" + arguments[0] + \"'].ag-row-group-expanded\");",
+                rowId));
+    }
+
+    /**
+     * Opens (or closes) group row {@code rowId} with a click on its visible chevron, and waits
+     * until it is. Up to 3 clicks: the first click on a closed group may only close another one.
+     */
+    private void setGroupExpanded(String rowId, boolean expanded) {
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            if (isGroupExpanded(rowId) == expanded) {
+                return;
+            }
+            scrollGridUntil("[...document.querySelectorAll(\"div[role=row][row-id='" + rowId
+                    + "'] .ag-group-contracted, div[role=row][row-id='" + rowId
+                    + "'] .ag-group-expanded\")].some(t => t.offsetParent !== null)");
+            WebElement chevron = (WebElement) js.executeScript(
+                    "return [...document.querySelectorAll(\"div[role=row][row-id='\" + arguments[0] + \"'] .ag-group-contracted,"
+                            + " div[role=row][row-id='\" + arguments[0] + \"'] .ag-group-expanded\")]"
+                            + ".find(t => t.offsetParent !== null) || null;", rowId);
+            try {
+                chevron.click();
+            } catch (ElementClickInterceptedException | StaleElementReferenceException notClickable) {
+                js.executeScript("arguments[0].click();", chevron);
+            }
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(3)).until(d -> isGroupExpanded(rowId) == expanded);
+                return;
+            } catch (TimeoutException notYet) {
+                // the click closed another group first; click again
+            }
+        }
+        throw new TimeoutException("Group row " + rowId + " did not " + (expanded ? "open" : "close") + " after 3 clicks.");
+    }
+
+    /**
+     * Scrolls the list grid sideways (both directions, from the start) until the
+     * JavaScript {@code condition} is true.
+     */
+    private void scrollGridUntil(String condition) {
+
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        String check = "return !!(" + condition + ");";
+        if (Boolean.TRUE.equals(js.executeScript(check))) {
+            return;
+        }
+        for (int direction : new int[]{-1, 1}) {
+            js.executeScript("const v=document.querySelector('.ag-center-cols-viewport'); if (v) v.scrollLeft=0;");
+            for (int step = 0; step < 30; step++) {
+                Object moved = js.executeScript(
+                        "const v=document.querySelector('.ag-center-cols-viewport'); if (!v) return false;"
+                                + "const before=v.scrollLeft; v.scrollLeft=before+arguments[0]*250;"
+                                + "return v.scrollLeft!==before;", direction);
+                pause(250);
+                if (Boolean.TRUE.equals(js.executeScript(check))) {
+                    return;
+                }
+                if (!Boolean.TRUE.equals(moved)) {
+                    break;
+                }
+            }
+        }
+        throw new TimeoutException("List grid: not found after scrolling sideways: " + condition);
+    }
+
+    private static void pause(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /** Opens "الملخصات" (if closed) and returns each card as status → number ("208+" → 208). */

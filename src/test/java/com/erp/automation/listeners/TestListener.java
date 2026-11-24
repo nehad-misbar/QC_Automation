@@ -180,15 +180,21 @@ public class TestListener implements ITestListener, IConfigurationListener {
     }
 
     /** Test class → the page title shown in the app's menu (parent entry in the report). */
-    private static final java.util.Map<String, String> PAGE_NAMES = java.util.Map.of(
-            "LoginTest", "تسجيل الدخول",
-            "PurchaseRequisitionTest", "طلبات الشراء",
-            "QuotationTest", "عروض الاسعار",
-            "PurchaseOrderTest", "اوامر الشراء",
-            "LocalPurchaseInvoiceTest", "فواتير المشتريات المحلية",
-            "ForeignPurchaseInvoiceTest", "فواتير المشتريات الخارجية",
-            "PurchaseInvoiceReturnTest", "فواتير مردود المشتريات",
-            "FreeQuantityProcessingTest", "معالجة الكمية المجانية");
+    private static final java.util.Map<String, String> PAGE_NAMES = java.util.Map.ofEntries(
+            java.util.Map.entry("LoginTest", "تسجيل الدخول"),
+            java.util.Map.entry("PurchaseRequisitionTest", "طلبات الشراء"),
+            java.util.Map.entry("QuotationTest", "عروض الاسعار"),
+            java.util.Map.entry("PurchaseOrderTest", "اوامر الشراء"),
+            java.util.Map.entry("LocalPurchaseInvoiceTest", "فواتير المشتريات المحلية"),
+            java.util.Map.entry("ForeignPurchaseInvoiceTest", "فواتير المشتريات الخارجية"),
+            java.util.Map.entry("PurchaseInvoiceReturnTest", "فواتير مردود المشتريات"),
+            java.util.Map.entry("FreeQuantityProcessingTest", "معالجة الكمية المجانية"),
+            java.util.Map.entry("SalesQuotationTest", "عروض أسعار المبيعات"),
+            java.util.Map.entry("SalesOrderTest", "أوامر البيع"),
+            java.util.Map.entry("SalesInvoiceTest", "فواتير المبيعات"),
+            java.util.Map.entry("SalesReturnTest", "مردود المبيعات"),
+            java.util.Map.entry("PricingTest", "التسعير"),
+            java.util.Map.entry("PriceChangeRequestTest", "طلبات تعديل الأسعار"));
 
     /** Page title of the test's class; the class name when it is not in {@link #PAGE_NAMES}. */
     private static String pageName(ITestResult result) {
@@ -223,7 +229,7 @@ public class TestListener implements ITestListener, IConfigurationListener {
 
         try {
             String screenshotPath = ScreenshotManager.takeScreenshot(driver, testName);
-            logger.error("Screenshot saved: {}", screenshotPath);
+            logger.info("Screenshot saved: {}", screenshotPath);
         } catch (Exception e) {
             logger.error("Failed to save screenshot file.", e);
         }
